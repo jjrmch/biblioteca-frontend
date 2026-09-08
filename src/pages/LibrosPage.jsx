@@ -12,6 +12,7 @@ const VACIO = { titulo: '', autor: '', isbn: '', precio: '', stock: '' }
 export default function LibrosPage() {
   const [libros, setLibros] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [soloDisponibles, setSoloDisponibles] = useState(false)
   const [modal, setModal] = useState(null) // null | { tipo: 'crear' } | { tipo: 'editar', libro } | { tipo: 'stock', libro }
   const [form, setForm] = useState(VACIO)
   const [guardando, setGuardando] = useState(false)
@@ -79,7 +80,8 @@ export default function LibrosPage() {
   }
 
   const filtrados = (libros || []).filter((l) =>
-    `${l.titulo} ${l.autor} ${l.isbn}`.toLowerCase().includes(busqueda.toLowerCase())
+    `${l.titulo} ${l.autor} ${l.isbn}`.toLowerCase().includes(busqueda.toLowerCase()) &&
+    (!soloDisponibles || l.stock > 0)
   )
 
   const inputClase = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
@@ -102,6 +104,16 @@ export default function LibrosPage() {
         placeholder="Buscar por título, autor o ISBN..."
         className="mb-4 w-full max-w-md rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
       />
+
+      <label className="mb-4 ml-2 inline-flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={soloDisponibles}
+          onChange={(e) => setSoloDisponibles(e.target.checked)}
+          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+        />
+        Solo disponibles
+      </label>
 
       {libros === null ? (
         <Spinner />
