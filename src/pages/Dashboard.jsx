@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api, formatearFecha, formatearMoneda } from '../api'
 import PageHeader from '../components/PageHeader'
 import Spinner from '../components/Spinner'
@@ -6,9 +6,11 @@ import Badge from '../components/Badge'
 
 export default function Dashboard() {
   const [datos, setDatos] = useState(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState(null)
 
-  useEffect(() => {
-    Promise.all([
+  const cargar = useCallback(() => {
+    Promise.allSettled([
       api.get('/libros'),
       api.get('/clientes'),
       api.get('/ventas'),
@@ -16,11 +18,55 @@ export default function Dashboard() {
       api.get('/reservas'),
       api.get('/multas'),
     ]).then(([libros, clientes, ventas, alquileres, reservas, multas]) => {
-      setDatos({ libros, clientes, ventas, alquileres, reservas, multas })
-    }).catch(() => setDatos([]))
+      const resultados = [libros, clientes, ventas, alquileres, reservas, multas]
+
+      if (resultados.every((r) => r.status === 'rejected')) {
+        setError('No se pudieron cargar los datos. Comprueba que los servicios están disponibles.')
+        return
+      }
+
+      const valor = (r) => (r.status === 'fulfilled' ? r.value : [])
+      setDatos({
+        libros: valor(libros),
+        clientes: valor(clientes),
+        ventas: valor(ventas),
+        alquileres: valor(alquileres),
+        reservas: valor(reservas),
+        multas: valor(multas),
+      })
+
+      if (resultados.some((r) => r.status === 'rejected')) {
+        setError('Algunos datos no se pudieron cargar; el resumen puede estar incompleto.')
+      }
+    }).finally(() => setCargando(false))
   }, [])
 
-  if (!datos) return <Spinner />
+  useEffect(() => { cargar() }, [cargar])
+
+  const reintentar = () => {
+    setCargando(true)
+    setError(null)
+    cargar()
+  }
+
+  if (cargando) return <Spinner />
+
+  if (!datos) {
+    return (
+      <div>
+        <PageHeader title="Dashboard" description="Resumen general de la biblioteca" />
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-8 text-center">
+          <p className="text-sm font-medium text-rose-700">{error}</p>
+          <button
+            onClick={reintentar}
+            className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const stockTotal = datos.libros.reduce((s, l) => s + (l.stock ?? 0), 0)
   const ingresos = datos.ventas.reduce((s, v) => s + (v.precioTotal ?? 0), 0)
@@ -44,6 +90,15 @@ export default function Dashboard() {
   return (
     <div>
       <PageHeader title="Dashboard" description="Resumen general de la biblioteca" />
+
+      {error && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">{error}</p>
+          <button onClick={reintentar} className="text-sm font-semibold text-amber-900 hover:underline">
+            Reintentar
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map((kpi) => (
