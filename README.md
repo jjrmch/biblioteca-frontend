@@ -1,5 +1,7 @@
 # Biblioteca Frontend
 
+![CI](https://github.com/jjrmch/biblioteca-frontend/actions/workflows/ci.yml/badge.svg)
+
 Panel de gestión web para el sistema de microservicios de la biblioteca (Spring Cloud). Frontend en **React + Vite + Tailwind CSS** que consume la API a través del **gateway-service** (`localhost:8080`).
 
 ## Funcionalidades
