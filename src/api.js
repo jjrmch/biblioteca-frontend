@@ -1,15 +1,47 @@
 const BASE = import.meta.env.VITE_API_URL || '/api'
+const CLAVE_SESION = 'biblioteca.sesion'
+
+export function leerSesion() {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_SESION))
+  } catch {
+    return null
+  }
+}
+
+export function guardarSesion(sesion) {
+  localStorage.setItem(CLAVE_SESION, JSON.stringify(sesion))
+}
+
+export function borrarSesion() {
+  localStorage.removeItem(CLAVE_SESION)
+}
 
 async function request(path, { method = 'GET', body } = {}) {
+  const sesion = leerSesion()
+  const headers = {}
+  if (body) headers['Content-Type'] = 'application/json'
+  if (sesion?.token) headers.Authorization = `Bearer ${sesion.token}`
+
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   })
 
   if (res.status === 204) return null
 
   const data = await res.json().catch(() => null)
+
+  if (res.status === 401 && !path.startsWith('/auth/login')) {
+    borrarSesion()
+    if (window.location.pathname !== '/login') {
+      window.location.assign('/login')
+    }
+    const error = new Error('La sesión ha expirado, vuelve a iniciar sesión')
+    error.status = 401
+    throw error
+  }
 
   if (!res.ok) {
     const error = new Error(data?.mensaje || `Error ${res.status}`)

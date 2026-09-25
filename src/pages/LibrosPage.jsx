@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, formatearMoneda } from '../api'
+import { useAuth } from '../auth'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import Spinner from '../components/Spinner'
@@ -12,11 +13,13 @@ const VACIO = { titulo: '', autor: '', isbn: '', precio: '', stock: '' }
 export default function LibrosPage() {
   const [libros, setLibros] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [soloDisponibles, setSoloDisponibles] = useState(false)
   const [modal, setModal] = useState(null) // null | { tipo: 'crear' } | { tipo: 'editar', libro } | { tipo: 'stock', libro }
   const [form, setForm] = useState(VACIO)
   const [guardando, setGuardando] = useState(false)
   const toast = useToast()
   const confirmar = useConfirm()
+  const { esStaff } = useAuth()
 
   const cargar = () => api.get('/libros').then(setLibros).catch((e) => toast.error(e.message))
 
@@ -79,7 +82,8 @@ export default function LibrosPage() {
   }
 
   const filtrados = (libros || []).filter((l) =>
-    `${l.titulo} ${l.autor} ${l.isbn}`.toLowerCase().includes(busqueda.toLowerCase())
+    `${l.titulo} ${l.autor} ${l.isbn}`.toLowerCase().includes(busqueda.toLowerCase()) &&
+    (!soloDisponibles || l.stock > 0)
   )
 
   const inputClase = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
@@ -90,9 +94,11 @@ export default function LibrosPage() {
         title="Libros"
         description="Catálogo e inventario de la biblioteca"
         action={
-          <button onClick={abrirCrear} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Nuevo libro
-          </button>
+          esStaff && (
+            <button onClick={abrirCrear} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+              Nuevo libro
+            </button>
+          )
         }
       />
 
@@ -102,6 +108,16 @@ export default function LibrosPage() {
         placeholder="Buscar por título, autor o ISBN..."
         className="mb-4 w-full max-w-md rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
       />
+
+      <label className="mb-4 ml-2 inline-flex items-center gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={soloDisponibles}
+          onChange={(e) => setSoloDisponibles(e.target.checked)}
+          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+        />
+        Solo disponibles
+      </label>
 
       {libros === null ? (
         <Spinner />
@@ -117,7 +133,7 @@ export default function LibrosPage() {
                 <th className="px-5 py-3">ISBN</th>
                 <th className="px-5 py-3">Precio</th>
                 <th className="px-5 py-3">Stock</th>
-                <th className="px-5 py-3 text-right">Acciones</th>
+                {esStaff && <th className="px-5 py-3 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -133,17 +149,19 @@ export default function LibrosPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => abrirStock(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50">
-                        Stock
-                      </button>
-                      <button onClick={() => abrirEditar(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50">
-                        Editar
-                      </button>
-                      <button onClick={() => eliminar(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
-                        Eliminar
-                      </button>
-                    </div>
+                    {esStaff && (
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => abrirStock(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50">
+                          Stock
+                        </button>
+                        <button onClick={() => abrirEditar(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50">
+                          Editar
+                        </button>
+                        <button onClick={() => eliminar(libro)} className="rounded-md px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
