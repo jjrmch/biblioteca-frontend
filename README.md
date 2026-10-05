@@ -1,8 +1,23 @@
 # Biblioteca Frontend
 
 ![CI](https://github.com/jjrmch/biblioteca-frontend/actions/workflows/ci.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Panel de gestión web para el sistema de microservicios de la biblioteca (Spring Cloud). Frontend en **React + Vite + Tailwind CSS** que consume la API a través del **gateway-service** (`localhost:8080`).
+
+## Capturas
+
+| Login | Dashboard |
+|---|---|
+| ![Login](docs/screenshots/01-login.png) | ![Dashboard](docs/screenshots/02-dashboard.png) |
+
+| Libros | Ventas |
+|---|---|
+| ![Libros](docs/screenshots/03-libros.png) | ![Ventas](docs/screenshots/05-ventas.png) |
+
+| Alquileres | Reservas |
+|---|---|
+| ![Alquileres](docs/screenshots/06-alquileres.png) | ![Reservas](docs/screenshots/07-reservas.png) |
 
 ## Funcionalidades
 
